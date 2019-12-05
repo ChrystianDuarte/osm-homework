@@ -25,13 +25,14 @@
         api_key: "{{ k8s_auth_results.k8s_auth.api_key }}"
         namespace: "{{control_plane_project_name}}"
         state: present
-        src: "{{ role_path }}/templates/smmr.yml"
+        definition: "{{ lookup('template', '{{ role_path }}/templates/smmr.yml') }}"
     
+    # BUG: Unable to use var as "name" when trying to get namespace information
     - name: Get {{service_mesh_member_roll_namespaces}} namespace object
       k8s_info:
         api_key: "{{ k8s_auth_results.k8s_auth.api_key }}"
         kind: Namespace
-        name: "{{service_mesh_member_roll_namespaces}}"
+        name: bookinfo
       register: namespace_description
 
     - shell: echo "Namespace contains Service Mesh labels"
