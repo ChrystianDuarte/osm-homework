@@ -1,5 +1,5 @@
-# tasks file for ServiceMeshMemberRoll
-- python_requirements_info:
+# tasks file for ServiceMeshMemberRoll python_requirements_info for version ansible 2.9
+- python_requirements_facts:
         dependencies:
           - openshift
           - requests
@@ -11,7 +11,7 @@
         username: "{{openshift_username}}"
         password: "{{openshift_password}}"
       register: k8s_auth_results
-    
+
     - name: Create {{control_plane_project_name}} namespace
       k8s:
         api_key: "{{ k8s_auth_results.k8s_auth.api_key }}"
@@ -26,13 +26,13 @@
         namespace: "{{control_plane_project_name}}"
         state: present
         definition: "{{ lookup('template', '{{ role_path }}/templates/smmr.yml') }}"
-    
+
     # BUG: Unable to use var as "name" when trying to get namespace information
     - name: Get {{service_mesh_member_roll_namespaces}} namespace object
       k8s_info:
         api_key: "{{ k8s_auth_results.k8s_auth.api_key }}"
         kind: Namespace
-        name: bookinfo
+        name: blackjack
       register: namespace_description
 
     - shell: echo "Namespace contains Service Mesh labels"
@@ -66,7 +66,7 @@
                 annotations:
                   sidecar.istio.io/inject: "true"
       with_items: "{{ deployment.resources }}"
-    
+
     - name: "Wait until the pods rollout"
       pause:
         seconds: 30
@@ -77,7 +77,7 @@
         kind: Pod
         namespace: "{{service_mesh_member_roll_namespaces}}"
       register: pods
-    
+
     - name: "Check if istio-proxy is deploy on Pod"
       shell: echo "Check if istio-proxy is deploy on Pod"
       failed_when: not(item.spec.containers is search('istio-proxy'))
@@ -92,13 +92,13 @@
 
     - name: Generate certificate
       shell: "openssl req -x509 -config {{ role_path }}/templates/cert.cfg -extensions req_ext -nodes -days 730 -newkey rsa:2048 -sha256 -keyout {{ role_path }}/files/tls.key -out {{ role_path }}/files/tls.crt"
-  
+
     - name: Set tls.crt and tls.key facts
       set_fact:
         crt: "{{ lookup('file', '{{ role_path }}/files/tls.crt') }}"
         key: "{{ lookup('file', '{{ role_path }}/files/tls.key') }}"
         cacheable: yes
-         
+
 
     - name: Create TLS secret
       k8s:
@@ -113,7 +113,7 @@
             tls.crt: "{{ ansible_facts.crt | b64encode }}"
             tls.key: "{{ ansible_facts.key | b64encode }}"
           type: kubernetes.io/tls
-      
+
     - name: Get date
       shell: "date -Iseconds"
       register: dateseconds
@@ -148,7 +148,7 @@
         namespace: "{{service_mesh_member_roll_namespaces}}"
         definition: "{{ lookup('template', '{{ role_path }}/templates/destinationrule.yml') }}"
       with_items: "{{ services.resources }}"
-    
+
     - name: "Create Virtual Service per Deployments on namespace"
       k8s:
         state: present
@@ -163,9 +163,9 @@
         kind: Route
         namespace: "{{service_mesh_member_roll_namespaces}}"
         name: productpage
-    
+
     - name: "Create new route to the product page"
-      k8s: 
+      k8s:
         state: present
         definition:
           kind: Route
@@ -174,7 +174,7 @@
               openshift.io/host.generated: 'true'
             labels:
               app: productpage
-              service: productpage 
+              service: productpage
             name: productpage
             namespace: "{{control_plane_project_name}}"
           spec:
