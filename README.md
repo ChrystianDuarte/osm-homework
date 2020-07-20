@@ -6,7 +6,7 @@ Repository with homework sources for RHT Service Mesh Advanced course.
 
 ```bash
 # Clone Sources
-git clone https://github.com/fmenesesg/osm-homework.git
+git clone https://github.com/ChrystianDuarte/osm-homework.git
 
 # Go to homework-rhoar
 cd osm-homework
